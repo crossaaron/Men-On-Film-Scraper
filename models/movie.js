@@ -1,13 +1,20 @@
 const mongoose = require('mongoose');
+
+// Save a reference to the Schema constructor
 let Schema = mongoose.Schema;
 
-const movieSchema = new Schema({
+// Using the Schema constructor, create a new UserSchema object
+const MovieSchema = new Schema({
     title: {
         type: String,
-        unique: true
+        required: true
     },
     link: String,
-    notes: [
+    
+    // `note` is an object that stores a Note id
+    // The ref property links the ObjectId to the Note model
+    // This allows us to populate the Article with an associated Note
+    note: [
         {
             type: Schema.Types.ObjectId,
             ref: "Note"
@@ -15,4 +22,4 @@ const movieSchema = new Schema({
     ]
 });
 
-const Movie = module.exports = mongoose.model('Movie', movieSchema);
+const Movie = module.exports = mongoose.model('Movie', MovieSchema);
