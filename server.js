@@ -1,10 +1,13 @@
-var express = require("express");
-var exphbs = require("express-handlebars");
-var mongojs = require("mongojs");
-var bodyParser = require("body-parser");
-var logger = require("morgan");
+const express = require("express");
+const exphbs = require("express-handlebars");
+const mongojs = require("mongojs");
+const bodyParser = require("body-parser");
+const logger = require("morgan");
+const cheerio = require("cheerio");
+const request = require("request");
 
-var app = express();
+//Initilizing Express
+const app = express();
 
 // morgan is used to log our HTTP Requests. By setting morgan to 'dev' 
 // the :status token will be colored red for server error codes, 
@@ -37,12 +40,18 @@ db.on("error", function(error) {
 
 //Routes
 
-//INDEX ROUTE
-app.get("/", function(req,res) {
-    res.render("home");
-});
 
 
+//setting up routes
+const index = require('./routes/index')
+const movies = require('./routes/movies')
+const notes = require('./routes/notes')
+const scrape = require('./routes/scrape')
+
+app.use('/', index)
+app.use('/movies', movies);
+app.use('/notes', notes);
+app.use('/scrape', scrape);
 
 
 
