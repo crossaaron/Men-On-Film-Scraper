@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // Save a reference to the Schema constructor
-let Schema = mongoose.Schema;
+const Schema = mongoose.Schema;
 
 // Using the Schema constructor, create a new UserSchema object
 const MovieSchema = new Schema({
@@ -22,7 +22,7 @@ const MovieSchema = new Schema({
     ]
 });
 
-let Movie = mongoose.model('Movie', MovieSchema);
+const Movie = mongoose.model('Movie', MovieSchema);
 
 module.exports = Movie;
 
