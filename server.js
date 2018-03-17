@@ -1,4 +1,3 @@
-require ('dotenv').config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const logger = require("morgan");
@@ -14,7 +13,7 @@ var cheerio = require("cheerio");
 
 var db = require("./models");
 
-var PORT = 3000;
+var PORT = process.env.PORT || 3000;
 
 // Initialize Express
 var app = express();
@@ -38,13 +37,11 @@ app.set("view engine", "handlebars");
 //---------------------------------------------------------
 var databaseUri = "mongodb://localhost/movieScraper";
 //---------------------------------------------------------
+mongoose.Promise = Promise;
+mongoose.connect(process.env.MONGODB_URI || databaseUri, {
+    useMongoClient: true
+});
 
-if (process.env.MONGODB_URI) {
-    mongoose.connect(process.env.MONGODB_URI);
-}else {
-    mongoose.connect(databaseUri)
-        .catch(err => console.log('There was an error with your connection:', err));
-}
 
 //'/' route
 app.get('/', (req,res) => {
