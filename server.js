@@ -1,61 +1,130 @@
 const express = require("express");
-const exphbs = require("express-handlebars");
-const mongojs = require("mongojs");
 const bodyParser = require("body-parser");
 const logger = require("morgan");
-const cheerio = require("cheerio");
-const request = require("request");
+const mongoose = require("mongoose");
+const exphbs = require('express-handlebars');
 
-//Initilizing Express
-const app = express();
+// Our scraping tools
+// Axios is a promised-based http library, similar to jQuery's Ajax method
+// It works on the client and on the server
+var axios = require("axios");
+var cheerio = require("cheerio");
 
-// morgan is used to log our HTTP Requests. By setting morgan to 'dev' 
-// the :status token will be colored red for server error codes, 
-// yellow for client error codes, cyan for redirection codes, 
-// and uncolored for all other codes.
+// Require all models
+var db = require("./models");
+
+var PORT = 3000;
+
+// Initialize Express
+var app = express();
+
+
+// Configure middleware
+
+// Use morgan logger for logging requests
 app.use(logger("dev"));
-// Setup the app with body-parser and a static folder
-app.use(
-    bodyParser.urlencoded({
-        extended: false
-    })
-);
+// Use body-parser for handling form submissions
+app.use(bodyParser.urlencoded({ extended: false }));
+// Use express.static to serve the public folder as a static directory
 app.use(express.static("public"));
 
 //Set Handlebars as templating engine
 app.engine("handlebars", exphbs({defaultLayout: "main"}));
 app.set("view engine", "handlebars");
 
-//Database configuration (mongoDB)
-var databaseUrl = "movieScraper";
-var collections = ["notes"];
+// Set mongoose to leverage built in JavaScript ES6 Promises
+// Connect to the Mongo DB
+mongoose.Promise = Promise;
+mongoose.connect("mongodb://localhost/movieScraper")
+    .catch(err => console.log('There was an error with your connection:', err));
 
-//hooking mongojs config to db variables
-var db = mongojs(databaseUrl, collections);
-
-//log any mongo js errors to console
-db.on("error", function(error) {
-    console.log("Database Error:", error);
+//'/' route
+app.get('/', (req,res) => {
+    res.render('home');
 });
 
-//Routes
+//GET route scraping fandango site
+app.get('/scrape', (req, res) => {
+    // Make a request call to grab the HTML body from fandango
+    axios.get("https://www.fandango.com/moviesintheaters").then(function (response) {
+        // Load the HTML into cheerio and save as a shorthand variable
+        let $ = cheerio.load(response.data);
+       
+        // Select each element in the HTML body from which you want information.
+        $("li.visual-item").each(function (i, element) {
+            // An empty array to save the data that we'll scrape
+            let result = {};
+            
+            result.link = $(element).children().attr("href");
+            result.title = $(element).text().trim();
+            // Save these results in an object that we'll push into the results array
 
+            // Create a new Article using the `result` object built from scraping
+            db.Movie.create(result)
+                .then(function (dbMovie) {
+                    // View the added result in the console
+                    console.log(dbMovie);
+                })
+                .catch(function (err) {
+                    // If an error occurred, send it to the client
+                    return res.json(err);
+                });
+        });
+        res.send("Scrape Complete");
+    });
+});
 
+// Route for getting all Articles from the db
+app.get("/movies", function (req, res) {
+    // Grab every document in the movieData collection
+    db.Movie.find({}).limit(10)
+        .then(function (dbMovie) {
+            // send them back to the client
+            res.json(dbMovie);
+        })
+        .catch(function (err) {
+            // If an error occurred, send it to the client
+            res.json(err);
+        });
+});
 
-//setting up routes
-const index = require('./routes/index')
-const movies = require('./routes/movies')
-const notes = require('./routes/notes')
-const scrape = require('./routes/scrape')
+//route for getting movie by ID
+app.get("/movies/:id", function (req, res) {
+    //using id param in url to find matching in database
+    db.Movie.findOne({ _id: req.params.id })
+        // ..and populate all of the notes associated with it
+        .populate("note")
+        .then(function (dbArticle) {
+            // If successful, find Movie with the given id, send it back to the client
+            res.json(dbArticle);
+        })
+        .catch(function (err) {
+            // If an error occurred, send it to the client
+            res.json(err);
+        });
+});
 
-app.use('/', index)
-app.use('/movies', movies);
-app.use('/notes', notes);
-app.use('/scrape', scrape);
+// Route for saving/updating an Article's associated Note
+app.post("/movies/:id", function (req, res) {
+    // Create a new note and pass the req.body to the entry
+    db.Note.create(req.body)
+        .then(function (dbNote) {
+            // If a Note was created successfully, find one Movie with an `_id` equal to `req.params.id`. *Update* 
+            // { new: true } returns the updated Movie -- it returns the original by default
+            // mongoose query returns a promise, chain another `.then` which receives the result of the query
+            return db.Movie.findOneAndUpdate({ _id: req.params.id }, { note: dbNote._id }, { new: true });
+        })
+        .then(function (dbMovie) {
+            // send it back to the client
+            res.json(dbMovie);
+        })
+        .catch(function (err) {
+            // If an error occurred, send it to the client
+            res.json(err);
+        });
+});
 
-
-
-// LISTEN ON PORT 3000
+// Start Server
 app.listen(3000, function() {
-    console.log("App running on port 3000!")
+    console.log("App running on port " + PORT)
 });
