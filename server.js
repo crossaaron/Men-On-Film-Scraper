@@ -10,7 +10,7 @@ const exphbs = require('express-handlebars');
 var axios = require("axios");
 var cheerio = require("cheerio");
 
-// Require all models
+
 var db = require("./models");
 
 var PORT = 3000;
@@ -34,9 +34,15 @@ app.set("view engine", "handlebars");
 
 // Set mongoose to leverage built in JavaScript ES6 Promises
 // Connect to the Mongo DB
-mongoose.Promise = Promise;
-mongoose.connect("mongodb://localhost/movieScraper")
-    .catch(err => console.log('There was an error with your connection:', err));
+//---------------------------------------------------------
+var databaseUri = "mongodb://localhost/movieScraper";
+//---------------------------------------------------------
+if (process.env.MONGODB_URI) {
+    mongoose.connect(process.env.MONGODB_URI);
+}else {
+    mongoose.connect(databaseUri)
+        .catch(err => console.log('There was an error with your connection:', err));
+}
 
 //'/' route
 app.get('/', (req,res) => {
