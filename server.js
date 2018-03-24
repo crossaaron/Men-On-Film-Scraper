@@ -99,9 +99,10 @@ app.get("/movies/:id", function (req, res) {
     db.Movie.findOne({ _id: req.params.id })
         // ..and populate all of the notes associated with it
         .populate("note")
-        .then(function (dbArticle) {
+        .then(function (dbMovie) {
             // If successful, find Movie with the given id, send it back to the client
-            res.json(dbArticle);
+            console.log(dbMovie);
+            res.json(dbMovie);
         })
         .catch(function (err) {
             // If an error occurred, send it to the client
