@@ -1,6 +1,6 @@
 # Two Snaps or Hated It!
 
-Track you favorite movies creatively and take note of what you liked!
+Track your favorite movies creatively and take note of what you liked!
 
 ## LINK
 https://fathomless-sierra-69306.herokuapp.com/
